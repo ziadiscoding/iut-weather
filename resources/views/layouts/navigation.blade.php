@@ -18,6 +18,9 @@
                     <x-nav-link :href="route('weather.search')" :active="request()->routeIs('weather.search')">
                         {{ __('Weather') }}
                     </x-nav-link>
+                    <x-nav-link :href="route('user_cities.index')" :active="request()->routeIs('user_cities.index')">
+                        {{ __('Cities') }}
+                    </x-nav-link>
                 </div>
             </div>
 

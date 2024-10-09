@@ -3,7 +3,8 @@
 namespace App\Http\Controllers;
 
 use App\Services\OpenWeatherService;
-use Illuminate\Http\Request;
+use App\Http\Requests\WeatherFormRequest;
+use Illuminate\Support\Facades\Log;
 use Carbon\Carbon;
 
 class WeatherController extends Controller
@@ -15,33 +16,36 @@ class WeatherController extends Controller
         $this->weatherService = $weatherService;
     }
 
-    public function index(Request $request)
+    public function index()
     {
-        $date = $request->input('date') ? Carbon::parse($request->input('date')) : Carbon::today();
+        $date = Carbon::today();
         $dates = $this->getDateRange($date);
         return view('weather.search', compact('dates', 'date'));
     }
 
-    public function getCurrentWeather(Request $request)
+    public function getCurrentWeather(WeatherFormRequest $request)
     {
-        $request->validate([
-            'city' => 'required|string|max:255',
-            'date' => 'required|date',
-        ]);
-
-        $date = Carbon::parse($request->date);
+        $city = $request->validated()['city'];
+        $date = Carbon::parse($request->input('date', now()));
         $dates = $this->getDateRange($date);
 
         try {
-            $weather = $this->weatherService->getWeatherForDate($request->city, $date);
+            $weatherData = $this->weatherService->getWeatherForDate($city, $date);
+
+            // Check if we're displaying a forecast or current weather
+            $isForecast = $date->isFuture() && $date->diffInDays(now()) <= 5;
+
             return view('weather.current', [
-                'weather' => $weather,
-                'city' => $request->city,
+                'weather' => $weatherData,
+                'city' => $city,
                 'date' => $date,
-                'dates' => $dates
+                'dates' => $dates,
+                'isForecast' => $isForecast,
+                'coordinates' => $weatherData['coordinates'] ?? null
             ]);
         } catch (\Exception $e) {
-            return back()->withError('Unable to fetch weather data. Please try again.');
+            Log::error("Error fetching weather data: " . $e->getMessage());
+            return back()->withError('Unable to fetch weather data. Please try again. Error: ' . $e->getMessage());
         }
     }
 
