@@ -15,4 +15,17 @@ class UserCity extends Model
     {
         return $this->belongsTo(User::class);
     }
+
+    public static function setFavorite($id, $userId)
+    {
+        // Remove favorite status from all cities for this user
+        self::where('user_id', $userId)->update(['is_favorite' => false]);
+
+        // Set the new favorite
+        $city = self::where('id', $id)->where('user_id', $userId)->firstOrFail();
+        $city->is_favorite = true;
+        $city->save();
+
+        return $city;
+    }
 }

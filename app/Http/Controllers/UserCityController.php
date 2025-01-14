@@ -9,39 +9,46 @@ class UserCityController extends Controller
 {
     public function index()
     {
-        $cities = auth()->user()->cities;
-        return view('user_cities.index', compact('cities'));
+        $favoriteCity = auth()->user()->cities()->where('is_favorite', true)->first();
+        $otherCities = auth()->user()->cities()->where('is_favorite', false)->get();
+        return view('user_cities.index', compact('favoriteCity', 'otherCities'));
     }
 
     public function store(Request $request)
     {
-        $request->validate(['city' => 'required|string|max:255']);
+        $request->validate([
+            'city' => 'required|string|max:255',
+        ]);
 
-        auth()->user()->cities()->create([
+        $city = auth()->user()->cities()->create([
             'city' => $request->city,
         ]);
 
         return redirect()->route('user_cities.index')->with('success', 'City added successfully.');
     }
 
-    public function destroy(UserCity $userCity)
+    public function toggleFavorite(UserCity $city)
     {
-        $this->authorize('delete', $userCity);
-        $userCity->delete();
+        if (!$city->is_favorite) {
+            UserCity::setFavorite($city->id, auth()->id());
+            $message = 'City set as favorite.';
+        } else {
+            $city->update(['is_favorite' => false]);
+            $message = 'City removed from favorites.';
+        }
+
+        return redirect()->route('user_cities.index')->with('success', $message);
+    }
+
+    public function toggleForecast(UserCity $city)
+    {
+        $city->update(['send_forecast' => !$city->send_forecast]);
+        return back()->with('success', 'Forecast settings updated.');
+    }
+
+    public function destroy(UserCity $city)
+    {
+        $city->delete();
         return redirect()->route('user_cities.index')->with('success', 'City removed successfully.');
-    }
-
-    public function toggleFavorite(UserCity $userCity)
-    {
-        $this->authorize('update', $userCity);
-        $userCity->update(['is_favorite' => !$userCity->is_favorite]);
-        return redirect()->route('user_cities.index')->with('success', 'Favorite status updated.');
-    }
-
-    public function toggleForecast(UserCity $userCity)
-    {
-        $this->authorize('update', $userCity);
-        $userCity->update(['send_forecast' => !$userCity->send_forecast]);
-        return redirect()->route('user_cities.index')->with('success', 'Forecast status updated.');
     }
 }

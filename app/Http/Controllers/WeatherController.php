@@ -74,4 +74,31 @@ class WeatherController extends Controller
             return $date->format('D, M j');
         }
     }
+
+    public function export($city)
+{
+    $forecasts = $this->weatherService->getWeatherForDate($city, now());
+    
+    $headers = [
+        "Content-type" => "text/csv",
+        "Content-Disposition" => "attachment; filename={$city}_forecast.csv",
+        "Pragma" => "no-cache",
+        "Cache-Control" => "must-revalidate, post-check=0, pre-check=0",
+        "Expires" => "0"
+    ];
+
+    $callback = function() use ($forecasts) {
+        $handle = fopen('php://output', 'w');
+        fputcsv($handle, ['Date', 'Temperature']);
+        
+        fputcsv($handle, [
+            Carbon::createFromTimestamp($forecasts['dt'])->format('Y-m-d'),
+            $forecasts['main']['temp'] . '°C'
+        ]);
+        
+        fclose($handle);
+    };
+
+    return response()->stream($callback, 200, $headers);
+}
 }
