@@ -22,9 +22,13 @@ class WeatherApiController extends Controller
 
     public function current(Request $request)
     {
-        $request->validate(['place' => 'required|string']);
-        $weather = $this->weatherService->getWeatherForDate($request->place, now());
-        return new WeatherResource($weather);
+        try {
+            $request->validate(['place' => 'required|string']);
+            $weather = $this->weatherService->getWeatherForDate($request->place, now());
+            return new WeatherResource($weather);
+        } catch (\Exception $e) {
+            return response()->json(['message' => $e->getMessage()], 404);
+        }
     }
 
     public function forecast(Request $request)

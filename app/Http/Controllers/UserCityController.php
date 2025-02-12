@@ -29,6 +29,10 @@ class UserCityController extends Controller
 
     public function toggleFavorite(UserCity $city)
     {
+        if ($city->user_id !== auth()->id()) {
+            abort(403);
+        }
+
         if (!$city->is_favorite) {
             UserCity::setFavorite($city->id, auth()->id());
             $message = 'City set as favorite.';
@@ -42,12 +46,20 @@ class UserCityController extends Controller
 
     public function toggleForecast(UserCity $city)
     {
+        if ($city->user_id !== auth()->id()) {
+            abort(403);
+        }
+
         $city->update(['send_forecast' => !$city->send_forecast]);
         return back()->with('success', 'Forecast settings updated.');
     }
 
     public function destroy(UserCity $city)
     {
+        if ($city->user_id !== auth()->id()) {
+            abort(403);
+        }
+        
         $city->delete();
         return redirect()->route('user_cities.index')->with('success', 'City removed successfully.');
     }
